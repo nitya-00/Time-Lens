@@ -141,7 +141,11 @@ function DailyLogPage() {
   const filledBlocks = log?.blocks.filter((block) => block.categoryId).length ?? 0
   const focusBlocks = log?.blocks.filter((block) => ['Study', 'Work'].includes(block.category?.name ?? '')).length ?? 0
   const plannedBlocks = log?.blocks.filter((block) => block.plannedTask).length ?? 0
+  const completedPlannedBlocks = log?.blocks.filter((block) => block.plannedTask && block.categoryId).length ?? 0
   const distractionBlocks = log?.blocks.filter((block) => block.distraction !== 'NONE').length ?? 0
+  const planCompletionPercentage = plannedBlocks ? Math.round((completedPlannedBlocks / plannedBlocks) * 100) : 0
+  const plannedDayPercentage = Math.round((plannedBlocks / 24) * 100)
+  const distractionPercentage = filledBlocks ? Math.round((distractionBlocks / filledBlocks) * 100) : 0
   const selectedDay = new Date(`${date}T12:00:00`)
   const formattedDate = selectedDay.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
@@ -152,9 +156,9 @@ function DailyLogPage() {
         <section className="date-bar" aria-label="Choose a day"><button onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">←</button><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /><button onClick={() => setDate(localDateInput())}>Today</button><button onClick={() => setDate(addDays(date, 1))} aria-label="Next day">→</button></section>
       </header>
       <section className="daily-metrics" aria-label="Daily summary">
-        <article><span className="metric-ring focus-ring" /><div><strong>{focusBlocks}h</strong><small>Focus time</small></div></article>
-        <article><span className="metric-ring plan-ring" /><div><strong>{plannedBlocks}h</strong><small>Planned blocks</small></div></article>
-        <article><span className="metric-ring distract-ring" /><div><strong>{distractionBlocks}h</strong><small>Distractions</small></div></article>
+        <article><span className="metric-ring focus-ring" style={{ background: `conic-gradient(#168066 ${planCompletionPercentage}%, #e5eae5 0)` }}><b>{planCompletionPercentage}%</b></span><div><strong>{completedPlannedBlocks} / {plannedBlocks}</strong><small>Plan complete</small></div></article>
+        <article><span className="metric-ring plan-ring" style={{ background: `conic-gradient(#e79631 ${plannedDayPercentage}%, #e5eae5 0)` }}><b>{plannedDayPercentage}%</b></span><div><strong>{plannedBlocks}h</strong><small>Day planned</small></div></article>
+        <article><span className="metric-ring distract-ring" style={{ background: `conic-gradient(#df6638 ${distractionPercentage}%, #e5eae5 0)` }}><b>{distractionPercentage}%</b></span><div><strong>{distractionBlocks}h</strong><small>Distractions</small></div></article>
         <article className="logged-total"><strong>{filledBlocks}<small> / 24</small></strong><span>Hours logged</span></article>
       </section>
       <p className="daily-helper">Changes save automatically while you write.</p>
@@ -168,7 +172,7 @@ function DailyLogPage() {
               <th scope="row">{hourLabel(block.hourIndex)}</th>
               <td><select aria-label={`${hourLabel(block.hourIndex)} category`} value={block.categoryId ?? ''} onChange={(event) => { const category = categories.find((item) => item.id === event.target.value); updateAndSave(block.hourIndex, { categoryId: event.target.value || null, category: category ? { name: category.name } : null }) }}><option value="">—</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></td>
               <td><input aria-label={`${hourLabel(block.hourIndex)} activity`} value={block.activity ?? ''} placeholder="What did you do?" onChange={(event) => updateAndSave(block.hourIndex, { activity: event.target.value })} onBlur={() => void saveLatest(block.hourIndex)} /></td>
-              <td><input aria-label={`${hourLabel(block.hourIndex)} planned task`} value={block.plannedTask ?? ''} placeholder="Optional" onChange={(event) => updateAndSave(block.hourIndex, { plannedTask: event.target.value })} onBlur={() => void saveLatest(block.hourIndex)} /></td>
+              <td><select aria-label={`${hourLabel(block.hourIndex)} planned task`} value={block.plannedTask ?? ''} onChange={(event) => updateAndSave(block.hourIndex, { plannedTask: event.target.value || null })}><option value="">Optional</option>{categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}</select></td>
               <td><select aria-label={`${hourLabel(block.hourIndex)} distraction`} value={block.distraction} onChange={(event) => updateAndSave(block.hourIndex, { distraction: event.target.value as Distraction })}>{distractions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td>
             </tr>)}
           </tbody>
