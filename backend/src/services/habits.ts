@@ -18,9 +18,14 @@ export async function getHabitAnalytics(days = 30, endDate = new Date()) {
     const healthHours = blocks.reduce((sum, block) => sum + categoryHours(block, 'Health'), 0)
     const funHours = blocks.reduce((sum, block) => sum + categoryHours(block, 'Fun'), 0)
     const sleepStarts = blocks.filter(block => block.category?.name === 'Sleep' && (block.hourIndex === 0 || blocks[block.hourIndex - 1]?.category?.name !== 'Sleep'))
-    const sleepStart = sleepStarts.find(block => block.hourIndex > 12) ?? sleepStarts[0]
-    const waking = sleepStart ? blocks.find(block => block.hourIndex > sleepStart.hourIndex && block.category?.name !== 'Sleep') : undefined
-    return { date: log.date.toISOString().slice(0, 10), phoneBeforeSleep: sleepStart && sleepStart.hourIndex > 0 ? !fullDistraction(blocks[sleepStart.hourIndex - 1]) : null, phoneAfterWaking: waking ? !fullDistraction(waking) : null, productiveDay: focusedHours > 4 && sleepHours > 3 && healthHours >= .5 && funHours > 1.5 }
+    const sleepStart = sleepStarts.find(block => block.hourIndex === 0) ?? sleepStarts[0]
+    let sleepEnd = sleepStart?.hourIndex
+    while (sleepEnd !== undefined && sleepEnd < 23 && blocks[sleepEnd + 1]?.category?.name === 'Sleep') sleepEnd++
+    const sleepPeriod = sleepStart !== undefined && sleepEnd !== undefined ? blocks.slice(sleepStart.hourIndex, sleepEnd + 1) : []
+    const waking = sleepEnd !== undefined && sleepEnd < 23 ? blocks[sleepEnd + 1] : undefined
+    const phoneDuringSleep = sleepPeriod.some(fullDistraction)
+    const beforeSleep = sleepStart && sleepStart.hourIndex > 0 ? blocks[sleepStart.hourIndex - 1] : undefined
+    return { date: log.date.toISOString().slice(0, 10), phoneBeforeSleep: sleepStart ? !(phoneDuringSleep || fullDistraction(beforeSleep)) : null, phoneAfterWaking: sleepStart ? !(phoneDuringSleep || fullDistraction(waking)) : null, productiveDay: focusedHours > 4 && sleepHours > 3 && healthHours >= .5 && funHours > 1.5 }
   })
   const streak = (key: keyof Pick<DayResult, 'phoneBeforeSleep' | 'phoneAfterWaking' | 'productiveDay'>) => { let total = 0; for (const result of [...results].reverse()) { if (result[key] !== true) break; total++ } return total }
   const summary = (key: keyof Pick<DayResult, 'phoneBeforeSleep' | 'phoneAfterWaking' | 'productiveDay'>) => [7, 15, 30].map(period => ({ days: period, completed: results.slice(-period).filter(item => item[key] === true).length, tracked: results.slice(-period).filter(item => item[key] !== null).length }))

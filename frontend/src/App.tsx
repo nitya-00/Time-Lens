@@ -160,7 +160,7 @@ function DailyLogPage() {
         <article><span className="metric-ring focus-ring" style={{ background: `conic-gradient(#168066 ${planCompletionPercentage}%, #e5eae5 0)` }}><b>{planCompletionPercentage}%</b></span><div><strong>{completedPlannedBlocks} / {plannedBlocks}</strong><small>Plan complete</small></div></article>
         <article><span className="metric-ring plan-ring" style={{ background: `conic-gradient(#e79631 ${plannedDayPercentage}%, #e5eae5 0)` }}><b>{plannedDayPercentage}%</b></span><div><strong>{plannedBlocks}h</strong><small>Day planned</small></div></article>
         <article><span className="metric-ring distract-ring" style={{ background: `conic-gradient(#df6638 ${distractionPercentage}%, #e5eae5 0)` }}><b>{distractionPercentage}%</b></span><div><strong>{distractionBlocks}h</strong><small>Distractions</small></div></article>
-        <article className="logged-total"><strong>{filledBlocks}<small> / 24</small></strong><span>Hours logged</span></article>
+        <article className="logged-total"><strong>{completedPlannedBlocks}<small> / {plannedBlocks}</small></strong><span>Planned hours done</span></article>
       </section>
       <p className="daily-helper">Changes save automatically while you write.</p>
 
