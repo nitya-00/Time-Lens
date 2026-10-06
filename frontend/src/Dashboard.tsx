@@ -10,6 +10,7 @@ type DashboardData = {
   insight: string
   recommendation: string
   celebration: string | null
+  daily: { planned: number; complete: number; distractionHours: number; loggedHours: number }
   challenge: { completedDays: number; targetDays: number; percentage: number }
 }
 
@@ -47,6 +48,10 @@ export default function Dashboard() {
   return <main className="dashboard-shell">
     <header className="masthead dashboard-header"><div><p className="eyebrow">TIME LENS</p><h1>Your day, in focus</h1><p className="quiet">A high-level view of {data.date}.</p></div><section className="date-bar" aria-label="Choose dashboard date"><button onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">←</button><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /><button onClick={() => setDate(localDateInput())}>Today</button><button onClick={() => setDate(addDays(date, 1))} aria-label="Next day">→</button></section></header>
     <section className="summary-grid" aria-label="Today’s time summary">
+      <article className="summary-card"><p>Plan complete</p><strong>{data.daily.complete} / {data.daily.planned}</strong><span>matching category and plan</span></article>
+      <article className="summary-card"><p>Day planned</p><strong>{data.daily.planned}h</strong><span>optional hours excluded</span></article>
+      <article className="summary-card"><p>Distracted</p><strong>{data.daily.distractionHours}h</strong><span>20 minutes for a partial interruption</span></article>
+      <article className="summary-card"><p>Hours logged</p><strong>{data.daily.loggedHours}h</strong><span>completed time blocks</span></article>
       {data.cards.map((card) => <article className="summary-card" key={card.name}>
         <p>{card.name}</p><strong>{card.hours}h</strong><span>{card.dayPercentage}% of day</span><small>{formatChange(card.changePercentage)}</small>
       </article>)}

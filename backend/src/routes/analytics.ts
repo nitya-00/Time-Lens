@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { getDashboard } from '../services/dashboard.js'
 import { getPeriodAnalytics } from '../services/analytics.js'
+import { getHabitAnalytics } from '../services/habits.js'
 
 const router = Router()
 
@@ -13,6 +14,10 @@ router.get('/analytics/dashboard', async (request, response, next) => {
   } catch (error) {
     next(error)
   }
+})
+
+router.get('/analytics/habits', async (_request, response, next) => {
+  try { response.json(await getHabitAnalytics()) } catch (error) { next(error) }
 })
 
 router.get('/analytics/:days', async (request, response, next) => {

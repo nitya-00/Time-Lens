@@ -138,11 +138,12 @@ function DailyLogPage() {
     void saveLatest(hourIndex)
   }
 
+  const isActualDistraction = (block: HourlyBlock) => ['PHONE', 'YOUTUBE', 'FRIENDS', 'TIRED', 'PROCRASTINATION'].includes(block.distraction)
+  const distractionTime = (block: HourlyBlock) => isActualDistraction(block) ? (!block.categoryId || block.activity?.trim().toLowerCase() === block.distraction.toLowerCase() ? 1 : 1 / 3) : 0
   const filledBlocks = log?.blocks.filter((block) => block.categoryId).length ?? 0
-  const focusBlocks = log?.blocks.filter((block) => ['Study', 'Work'].includes(block.category?.name ?? '')).length ?? 0
-  const plannedBlocks = log?.blocks.filter((block) => block.plannedTask).length ?? 0
-  const completedPlannedBlocks = log?.blocks.filter((block) => block.plannedTask && block.categoryId).length ?? 0
-  const distractionBlocks = log?.blocks.filter((block) => block.distraction !== 'NONE').length ?? 0
+  const plannedBlocks = log?.blocks.filter((block) => block.plannedTask && block.plannedTask.toLowerCase() !== 'optional').length ?? 0
+  const completedPlannedBlocks = log?.blocks.filter((block) => block.plannedTask && block.plannedTask.toLowerCase() !== 'optional' && block.category?.name.toLowerCase() === block.plannedTask.toLowerCase()).length ?? 0
+  const distractionBlocks = Number((log?.blocks.reduce((sum, block) => sum + distractionTime(block), 0) ?? 0).toFixed(1))
   const planCompletionPercentage = plannedBlocks ? Math.round((completedPlannedBlocks / plannedBlocks) * 100) : 0
   const plannedDayPercentage = Math.round((plannedBlocks / 24) * 100)
   const distractionPercentage = filledBlocks ? Math.round((distractionBlocks / filledBlocks) * 100) : 0
@@ -183,5 +184,7 @@ function DailyLogPage() {
 }
 
 export default function App() {
-  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/">TIME <span>LENS</span></NavLink><div className="nav-links"><NavLink to="/">Daily log</NavLink><NavLink to="/dashboard">Dashboard</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 Days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><ProfilePhoto /><NavLink to="/auth">Sign in</NavLink></div></nav><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/auth" element={<Auth />} /></Routes></>
+  const [dark, setDark] = useState(() => localStorage.getItem('timelens-dark-mode') !== 'false')
+  useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('timelens-dark-mode', String(dark)) }, [dark])
+  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/">TIME <span>LENS</span></NavLink><div className="nav-links"><NavLink to="/">Daily log</NavLink><NavLink to="/dashboard">Dashboard</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 Days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀ Light' : '☾ Dark'}</button><ProfilePhoto /><NavLink to="/auth">Sign in</NavLink></div></nav><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/auth" element={<Auth />} /></Routes></>
 }

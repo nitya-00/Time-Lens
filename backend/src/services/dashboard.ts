@@ -2,6 +2,7 @@ import { CategoryGroup, type HourlyBlock } from '../generated/prisma/client.js'
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { getOrCreateDailyLog } from './dailyLog.js'
+import { categoryHours, distractionHours, isPlanComplete, isOptionalPlan, roundHours } from './timeRules.js'
 
 const cardGroups = ['Work', 'Study', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other']
 
@@ -18,7 +19,7 @@ function addDays(date: Date, days: number) {
 }
 
 function hoursForGroups(blocks: BlockWithCategory[], categories: string[]) {
-  return blocks.filter((block) => block.category && categories.includes(block.category.name)).length
+  return roundHours(blocks.reduce((sum, block) => sum + categories.reduce((subtotal, category) => subtotal + categoryHours(block, category), 0), 0))
 }
 
 function change(current: number, previous: number) {
@@ -45,7 +46,7 @@ export async function getDashboard(date = new Date()) {
   })
   const studyBreakdown = ['Study', 'Work', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other'].map((name) => ({
     name,
-    hours: todayBlocks.filter((block) => block.category?.name === name).length,
+    hours: hoursForGroups(todayBlocks, [name]),
   })).filter((item) => item.hours > 0)
 
   const mondayOffset = (selectedDay.getUTCDay() + 6) % 7
@@ -77,5 +78,8 @@ export async function getDashboard(date = new Date()) {
   const completedDays = new Set(challenge?.days.map((day) => day.date.toISOString().slice(0, 10)) ?? []).size
   const targetDays = challenge?.targetDays ?? 100
 
-  return { date: selectedDay.toISOString().slice(0, 10), cards, studyBreakdown, weekly, insight, recommendation, celebration: filledHours >= 18 ? 'Wow — you did it. See you tomorrow.' : null, challenge: { completedDays, targetDays, percentage: Number(((completedDays / targetDays) * 100).toFixed(0)) } }
+  const planned = todayBlocks.filter(block => !isOptionalPlan(block.plannedTask))
+  const planComplete = planned.filter(isPlanComplete).length
+  const distractedHours = roundHours(todayBlocks.reduce((sum, block) => sum + distractionHours(block), 0))
+  return { date: selectedDay.toISOString().slice(0, 10), cards, studyBreakdown, weekly, insight, recommendation, celebration: filledHours >= 18 ? 'Wow — you did it. See you tomorrow.' : null, daily: { planned: planned.length, complete: planComplete, distractionHours: distractedHours, loggedHours: roundHours(todayBlocks.reduce((sum, block) => sum + (block.category ? 1 : 0), 0)) }, challenge: { completedDays, targetDays, percentage: Number(((completedDays / targetDays) * 100).toFixed(0)) } }
 }
