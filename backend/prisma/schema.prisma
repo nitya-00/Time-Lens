@@ -19,6 +19,7 @@ model User {
   experiments  Experiment[]
   goals        Goal[]
   reminders    Reminder[]
+  habitOverrides HabitOverride[]
 }
 
 model Category {
@@ -84,6 +85,16 @@ model GoalCheckIn {
 
   @@unique([goalId, date])
   @@index([date])
+}
+
+model HabitOverride {
+  id String @id @default(cuid())
+  userId String
+  date DateTime @db.Date
+  habit String
+  completed Boolean
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, date, habit])
 }
 
 model Challenge {
