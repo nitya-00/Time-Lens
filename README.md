@@ -46,8 +46,7 @@ SESSION_SECRET="a-long-random-local-development-secret"
 Apply the existing database migrations and add the default time categories:
 
 ```bash
-npm run db:migrate:deploy --workspace=backend
-npm run db:seed --workspace=backend
+
 ```
 
 Start the frontend and backend together:
