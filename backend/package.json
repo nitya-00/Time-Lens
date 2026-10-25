@@ -13,7 +13,8 @@
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test src/*.test.ts src/**/*.test.ts"
+    "test": "tsx --test src/*.test.ts src/**/*.test.ts",
+    "test:performance": "tsx --test ../testing/performance/*.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
