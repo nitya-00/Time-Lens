@@ -1,6 +1,7 @@
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { categoryHours, isDistraction, isPhoneUse, type LoggedBlock } from './timeRules.js'
+import { todayInTimeZone } from '../lib/dates.js'
 
 const day = (value: Date) => new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
 const shift = (value: Date, offset: number) => new Date(value.getTime() + offset * 86_400_000)
@@ -44,8 +45,8 @@ function evaluateDay(log: LogWithBlocks, previous: LogWithBlocks | undefined, ru
   }
 }
 
-export async function getHabitAnalytics(days = 30, endDate = new Date()) {
-  const profile = await getLocalProfile(); const end = day(endDate); const start = shift(end, -(days - 1))
+export async function getHabitAnalytics(days = 30, endDate?: Date) {
+  const profile = await getLocalProfile(); const end = endDate ? day(endDate) : todayInTimeZone(profile.timeZone); const start = shift(end, -(days - 1))
   const rule: ProductiveRule = { enabled: profile.productiveDayEnabled, study: profile.productiveStudyHours, work: profile.productiveWorkHours, fun: profile.productiveFunHours, health: profile.productiveHealthHours }
   const logs = await prisma.dailyLog.findMany({ where: { userId: profile.id, date: { gte: shift(start, -1), lte: end } }, include: { hourlyBlocks: { include: { category: true }, orderBy: { hourIndex: 'asc' } } }, orderBy: { date: 'asc' } }) as LogWithBlocks[]
   const automatic = logs.filter(log => log.date >= start).map(log => evaluateDay(log, logs[logs.indexOf(log) - 1], rule))

@@ -5,6 +5,7 @@ import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { getOrCreateDailyLog, updateHourlyBlock } from '../services/dailyLog.js'
 import { getUserCategories } from '../services/categories.js'
+import { todayInTimeZone } from '../lib/dates.js'
 
 const router = Router()
 const distractionValues = Object.values(DistractionType) as [DistractionType, ...DistractionType[]]
@@ -52,7 +53,7 @@ router.get('/categories', async (_request, response, next) => {
 router.get('/daily-log/today', async (_request, response, next) => {
   try {
     const profile = await getLocalProfile()
-    const log = await getOrCreateDailyLog(profile.id, new Date())
+    const log = await getOrCreateDailyLog(profile.id, todayInTimeZone(profile.timeZone))
     response.json(toDailyLogResponse(log))
   } catch (error) {
     next(error)
