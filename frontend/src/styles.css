@@ -67,3 +67,4 @@ html,body,#root{width:100%;min-height:100%;overflow-x:hidden}body{overflow-y:aut
 
 /* Reserve the sidebar before sizing the content, rather than overflowing under it. */
 @media(min-width:901px){.app-shell,.dashboard-shell{width:calc(100% - 15.75rem);max-width:none}}
+.preference-editor{margin-top:1rem}.preference-editor h2{margin:.25rem 0}.preference-chips{display:flex;flex-wrap:wrap;gap:.55rem;margin:1rem 0}.preference-chips span{display:flex;align-items:center;gap:.45rem;padding:.45rem .65rem;border:1px solid #353535;border-radius:999px}.preference-chips button{padding:0;border:0;background:transparent;color:inherit;font-size:1.1rem;line-height:1;min-width:0}.add-preference{display:flex;gap:.6rem;max-width:28rem}.add-preference input{flex:1}

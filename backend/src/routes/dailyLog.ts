@@ -4,25 +4,16 @@ import { DistractionType } from '../generated/prisma/client.js'
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { getOrCreateDailyLog, updateHourlyBlock } from '../services/dailyLog.js'
+import { getUserCategories } from '../services/categories.js'
 
 const router = Router()
-const trackerCategories = [
-  { name: 'Study', group: 'STUDY' },
-  { name: 'Work', group: 'WORK' },
-  { name: 'Sleep', group: 'SLEEP' },
-  { name: 'House', group: 'LIFE' },
-  { name: 'Health', group: 'HEALTH' },
-  { name: 'Personal', group: 'LIFE' },
-  { name: 'Other', group: 'OTHER' },
-  { name: 'Fun', group: 'LEISURE' },
-] as const
-
 const distractionValues = Object.values(DistractionType) as [DistractionType, ...DistractionType[]]
 const updateBlockSchema = z.object({
   categoryId: z.string().cuid().nullable().optional(),
   activity: z.string().trim().max(160).nullable().optional(),
   plannedTask: z.string().trim().max(160).nullable().optional(),
   distraction: z.enum(distractionValues).optional(),
+  customDistraction: z.string().trim().min(1).max(40).nullable().optional(),
   missedPlanReason: z.string().trim().max(240).nullable().optional(),
 })
 
@@ -42,6 +33,7 @@ function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>
       activity: block.activity,
       plannedTask: block.plannedTask,
       distraction: block.distraction,
+      customDistraction: block.customDistraction,
       missedPlanReason: block.missedPlanReason,
     })),
   }
@@ -49,14 +41,9 @@ function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>
 
 router.get('/categories', async (_request, response, next) => {
   try {
-    await Promise.all(trackerCategories.map((category) => prisma.category.upsert({
-      where: { name: category.name }, update: { group: category.group }, create: category,
-    })))
-    const categories = await prisma.category.findMany({ where: { name: { in: trackerCategories.map((category) => category.name) } } })
-    response.json({ categories: trackerCategories.flatMap((expected) => {
-      const category = categories.find((item) => item.name === expected.name)
-      return category ? [{ name: category.name, id: category.id }] : []
-    }) })
+    const profile = await getLocalProfile()
+    const categories = await getUserCategories(profile.id)
+    response.json({ categories: categories.map((category) => ({ name: category.name, id: category.id })) })
   } catch (error) {
     next(error)
   }
@@ -97,6 +84,13 @@ router.patch('/daily-log/:date/blocks/:hourIndex', async (request, response, nex
     if (!parsed.success) return response.status(400).json({ message: 'Please check the values in this hourly block.' })
 
     const profile = await getLocalProfile()
+    if (parsed.data.categoryId) {
+      const category = await prisma.category.findFirst({ where: { id: parsed.data.categoryId, userId: profile.id } })
+      if (!category) return response.status(400).json({ message: 'Please choose one of your own categories.' })
+    }
+    if (parsed.data.distraction !== DistractionType.OTHER && parsed.data.customDistraction) {
+      return response.status(400).json({ message: 'Custom distraction labels use the Other option.' })
+    }
     const log = await getOrCreateDailyLog(profile.id, date)
     const block = await updateHourlyBlock(log.id, hourIndex, parsed.data)
     response.json({
@@ -106,6 +100,7 @@ router.patch('/daily-log/:date/blocks/:hourIndex', async (request, response, nex
       activity: block.activity,
       plannedTask: block.plannedTask,
       distraction: block.distraction,
+      customDistraction: block.customDistraction,
       missedPlanReason: block.missedPlanReason,
     })
   } catch (error) {

@@ -61,6 +61,7 @@ type HourlyBlockUpdate = {
   activity?: string | null
   plannedTask?: string | null
   distraction?: DistractionType
+  customDistraction?: string | null
   missedPlanReason?: string | null
 }
 

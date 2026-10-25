@@ -5,8 +5,8 @@ export const distractionTypes = new Set<DistractionType>([
 ])
 export type LoggedBlock = HourlyBlock & { category: { name: string } | null }
 
-export function isDistraction(block: Pick<HourlyBlock, 'distraction'>) {
-  return distractionTypes.has(block.distraction)
+export function isDistraction(block: Pick<HourlyBlock, 'distraction' | 'customDistraction'>) {
+  return distractionTypes.has(block.distraction) || (block.distraction === DistractionType.OTHER && !!block.customDistraction)
 }
 
 export function isOptionalPlan(value: string | null) {
@@ -22,7 +22,8 @@ export function isPlanComplete(block: LoggedBlock) {
 export function distractionHours(block: LoggedBlock) {
   if (!isDistraction(block)) return 0
   const activity = block.activity?.trim().toLowerCase()
-  const wholeHour = !block.category || activity === block.distraction.toLowerCase() || activity === block.distraction.replace('_', ' ').toLowerCase()
+  const label = block.customDistraction ?? block.distraction.replace('_', ' ')
+  const wholeHour = !block.category || activity === block.distraction.toLowerCase() || activity === label.toLowerCase()
   return wholeHour ? 1 : 1 / 3
 }
 

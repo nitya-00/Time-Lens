@@ -26,14 +26,21 @@ model User {
   goals        Goal[]
   reminders    Reminder[]
   habitOverrides HabitOverride[]
+  categories   Category[]
+  distractionOptions Json?
 }
 
 model Category {
   id           String        @id @default(cuid())
-  name         String        @unique
+  name         String
+  userId       String?
   group        CategoryGroup
   createdAt    DateTime      @default(now())
   hourlyBlocks HourlyBlock[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
 }
 
 model DailyLog {
@@ -57,6 +64,7 @@ model HourlyBlock {
   activity         String?
   plannedTask      String?
   distraction      DistractionType @default(NONE)
+  customDistraction String?
   missedPlanReason String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt

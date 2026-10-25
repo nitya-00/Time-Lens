@@ -2,8 +2,7 @@ import { CategoryGroup, DistractionType, type HourlyBlock } from '../generated/p
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { categoryHours, distractionHours, isDistraction, isPlanComplete, isOptionalPlan, roundHours } from './timeRules.js'
-
-const groups = ['Study', 'Work', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other']
+import { getUserCategories } from './categories.js'
 type Block = HourlyBlock & { category: { name: string; group: CategoryGroup } | null }
 
 const day = (value: Date) => new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
@@ -23,6 +22,7 @@ const expectedCategory = (task: string) => {
 
 export async function getPeriodAnalytics(days: number, endDate = new Date()) {
   const profile = await getLocalProfile()
+  const groups = (await getUserCategories(profile.id)).map((category) => category.name)
   const end = day(endDate)
   const currentStart = shift(end, -(days - 1))
   const previousStart = shift(currentStart, -days)
@@ -46,8 +46,8 @@ export async function getPeriodAnalytics(days: number, endDate = new Date()) {
   })
   const planned = current.filter((block) => !isOptionalPlan(block.plannedTask))
   const completed = planned.filter(isPlanComplete)
-  const distractionCounts = Object.values(DistractionType).filter((type) => type !== DistractionType.NONE).map((type) => ({ name: type.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()), count: roundHours(current.filter((block) => block.distraction === type && isDistraction(block)).reduce((sum, block) => sum + distractionHours(block), 0)) })).filter((item) => item.count > 0)
-  const studyBreakdown = ['Study', 'Work', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other'].map((name) => ({ name, hours: count(current, [name]) })).filter((item) => item.hours > 0)
+  const distractionCounts = Object.entries(current.filter(isDistraction).reduce<Record<string, number>>((total, block) => { const name = block.customDistraction ?? block.distraction.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()); total[name] = (total[name] ?? 0) + distractionHours(block); return total }, {})).map(([name, count]) => ({ name, count: roundHours(count) })).filter((item) => item.count > 0)
+  const studyBreakdown = groups.map((name) => ({ name, hours: count(current, [name]) })).filter((item) => item.hours > 0)
   const otherActivities = current.filter((block) => block.category?.name === 'Other' && block.activity?.trim()).reduce<Record<string, number>>((result, block) => {
     const activity = block.activity!.trim()
     result[activity] = (result[activity] ?? 0) + categoryHours(block, 'Other')

@@ -20,14 +20,10 @@ type HourlyBlock = {
   activity: string | null
   plannedTask: string | null
   distraction: Distraction
+  customDistraction: string | null
   missedPlanReason: string | null
 }
 type DailyLog = { date: string; blocks: HourlyBlock[] }
-
-const distractions: Array<[Distraction, string]> = [
-  ['NONE', 'None'], ['PHONE', 'Phone'], ['YOUTUBE', 'YouTube'], ['FRIENDS', 'Friends'],
-  ['UNEXPECTED_WORK', 'Unexpected work'], ['TIRED', 'Tired'], ['PROCRASTINATION', 'Procrastination'], ['OTHER', 'Other'],
-]
 
 function addDays(date: string, days: number) {
   const next = new Date(`${date}T12:00:00`)
@@ -63,6 +59,7 @@ function DailyLogPage() {
   const [date, setDate] = useState(localDateInput())
   const [log, setLog] = useState<DailyLog | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
+  const [distractionOptions, setDistractionOptions] = useState<string[]>([])
   const [message, setMessage] = useState('')
   const [guest, setGuest] = useState(false)
   const logRef = useRef<DailyLog | null>(null)
@@ -73,16 +70,18 @@ function DailyLogPage() {
   const loadDay = useCallback(async (selectedDate: string) => {
     setMessage('')
     try {
-      const [logResponse, categoryResponse] = await Promise.all([
+      const [logResponse, categoryResponse, accountResponse] = await Promise.all([
         apiFetch(`/api/daily-log/${selectedDate}`),
         apiFetch('/api/categories'),
+        apiFetch('/api/auth/account'),
       ])
-      if (logResponse.status === 401 || categoryResponse.status === 401) { setGuest(true); return }
-      if (!logResponse.ok || !categoryResponse.ok) throw new Error('Could not load the daily log.')
+      if (logResponse.status === 401 || categoryResponse.status === 401 || accountResponse.status === 401) { setGuest(true); return }
+      if (!logResponse.ok || !categoryResponse.ok || !accountResponse.ok) throw new Error('Could not load the daily log.')
       const loaded = await logResponse.json() as DailyLog
       logRef.current = loaded
       setLog(loaded)
       setCategories((await categoryResponse.json() as { categories: Category[] }).categories)
+      setDistractionOptions((await accountResponse.json() as { distractionOptions: string[] }).distractionOptions)
     } catch {
       setMessage('Unable to load this day. Please refresh and try again.')
     }
@@ -114,6 +113,7 @@ function DailyLogPage() {
           activity: block.activity || null,
           plannedTask: block.plannedTask || null,
           distraction: block.distraction,
+          customDistraction: block.customDistraction,
           missedPlanReason: block.missedPlanReason || null,
         }),
       })
@@ -142,7 +142,7 @@ function DailyLogPage() {
     void saveLatest(hourIndex)
   }
 
-  const isActualDistraction = (block: HourlyBlock) => ['PHONE', 'YOUTUBE', 'FRIENDS', 'TIRED', 'PROCRASTINATION'].includes(block.distraction)
+  const isActualDistraction = (block: HourlyBlock) => block.distraction !== 'NONE'
   const distractionTime = (block: HourlyBlock) => isActualDistraction(block) ? (!block.categoryId || block.activity?.trim().toLowerCase() === block.distraction.toLowerCase() ? 1 : 1 / 3) : 0
   const filledBlocks = log?.blocks.filter((block) => block.categoryId).length ?? 0
   const plannedBlocks = log?.blocks.filter((block) => block.plannedTask && block.plannedTask.toLowerCase() !== 'optional').length ?? 0
@@ -178,7 +178,7 @@ function DailyLogPage() {
               <td><select aria-label={`${hourLabel(block.hourIndex)} category`} value={block.categoryId ?? ''} onChange={(event) => { const category = categories.find((item) => item.id === event.target.value); updateAndSave(block.hourIndex, { categoryId: event.target.value || null, category: category ? { name: category.name } : null }) }}><option value="">—</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></td>
               <td><input aria-label={`${hourLabel(block.hourIndex)} activity`} value={block.activity ?? ''} placeholder="What did you do?" onChange={(event) => updateAndSave(block.hourIndex, { activity: event.target.value })} onBlur={() => void saveLatest(block.hourIndex)} /></td>
               <td><select aria-label={`${hourLabel(block.hourIndex)} planned task`} value={block.plannedTask ?? ''} onChange={(event) => updateAndSave(block.hourIndex, { plannedTask: event.target.value || null })}><option value="">Optional</option>{categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}</select></td>
-              <td><select aria-label={`${hourLabel(block.hourIndex)} distraction`} value={block.distraction} onChange={(event) => updateAndSave(block.hourIndex, { distraction: event.target.value as Distraction })}>{distractions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td>
+              <td><select aria-label={`${hourLabel(block.hourIndex)} distraction`} value={block.distraction === 'NONE' ? '' : block.customDistraction ?? ''} onChange={(event) => { const label = event.target.value; updateAndSave(block.hourIndex, label ? { distraction: 'OTHER', customDistraction: label } : { distraction: 'NONE', customDistraction: null }) }}><option value="">None</option>{distractionOptions.map((label) => <option key={label} value={label}>{label}</option>)}</select></td>
             </tr>)}
           </tbody>
         </table>

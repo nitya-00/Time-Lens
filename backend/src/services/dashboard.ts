@@ -2,9 +2,8 @@ import { CategoryGroup, type HourlyBlock } from '../generated/prisma/client.js'
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { getOrCreateDailyLog } from './dailyLog.js'
+import { getUserCategories } from './categories.js'
 import { categoryHours, distractionHours, isPlanComplete, isOptionalPlan, roundHours } from './timeRules.js'
-
-const cardGroups = ['Work', 'Study', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other']
 
 type BlockWithCategory = HourlyBlock & { category: { name: string; group: CategoryGroup } | null }
 
@@ -29,6 +28,7 @@ function change(current: number, previous: number) {
 
 export async function getDashboard(date = new Date()) {
   const profile = await getLocalProfile()
+  const cardGroups = (await getUserCategories(profile.id)).map((category) => category.name)
   const selectedDay = startOfDay(date)
   await getOrCreateDailyLog(profile.id, selectedDay)
   const yesterday = addDays(selectedDay, -1)
@@ -44,7 +44,7 @@ export async function getDashboard(date = new Date()) {
     const previousHours = hoursForGroups(yesterdayBlocks, [name])
     return { name, hours, dayPercentage: Number(((hours / 24) * 100).toFixed(1)), changePercentage: change(hours, previousHours) }
   })
-  const studyBreakdown = ['Study', 'Work', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other'].map((name) => ({
+  const studyBreakdown = cardGroups.map((name) => ({
     name,
     hours: hoursForGroups(todayBlocks, [name]),
   })).filter((item) => item.hours > 0)
