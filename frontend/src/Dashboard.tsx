@@ -50,7 +50,7 @@ export default function Dashboard() {
   if (!data) return <main className="dashboard-shell"><p className="quiet">Loading your day…</p></main>
 
   return <main className="dashboard-shell">
-    <header className="masthead dashboard-header"><div><p className="eyebrow">TIME LENS</p><h1>Your day, in focus</h1><p className="quiet">A high-level view of {data.date}.</p></div><section className="date-bar" aria-label="Choose dashboard date"><button onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">←</button><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /><button onClick={() => setDate(localDateInput())}>Today</button><button onClick={() => setDate(addDays(date, 1))} aria-label="Next day">→</button></section></header>
+    <header className="masthead dashboard-header"><div><p className="eyebrow">TIME LENS</p><h1>Your day, in focus</h1></div><section className="date-bar" aria-label="Choose dashboard date"><button onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">←</button><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /><button onClick={() => setDate(localDateInput())}>Today</button><button onClick={() => setDate(addDays(date, 1))} aria-label="Next day">→</button></section></header>
     <section className="summary-grid" aria-label="Today’s time summary">
       {data.cards.map((card) => <article className="summary-card" key={card.name}>
         <p>{card.name}</p><strong>{card.hours}h</strong><span>{card.dayPercentage}% of day</span><small>{formatChange(card.changePercentage)}</small>

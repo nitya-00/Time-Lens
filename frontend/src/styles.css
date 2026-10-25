@@ -55,6 +55,9 @@ html,body,#root{width:100%;min-height:100%;overflow-x:hidden}body{overflow-y:aut
 .masthead h1,.daily-topbar h1{font-size:clamp(1.75rem,2.5vw,2.5rem)}.daily-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.daily-workspace .focus-ring{background:conic-gradient(#168066 var(--metric-progress),#424242 0)!important}.daily-workspace .plan-ring{background:conic-gradient(#e79631 var(--metric-progress),#424242 0)!important}.daily-workspace .distract-ring{background:conic-gradient(#df6638 var(--metric-progress),#424242 0)!important}
 
 .daily-topbar h1{font-size:clamp(2.1rem,3vw,2.375rem)}.daily-topbar .daily-motto{margin:.4rem 0 0;color:#bcbcbc;font-size:.9rem}
+
+/* Overview: match the compact Daily Log metric scale and balance weekly categories. */
+.dashboard-shell .summary-card strong{font-size:1.7rem;font-weight:700}.weekly-panel{display:grid;grid-template-columns:minmax(13rem,.55fr) 1fr;align-items:start;gap:1.5rem}.weekly-panel .weekly-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:0 1.5rem;width:100%;min-width:0}.weekly-panel .weekly-list li{grid-template-columns:1fr auto auto;gap:.55rem}.weekly-panel .weekly-list small{font-size:.78rem}@media(max-width:700px){.weekly-panel{grid-template-columns:1fr}.weekly-panel .weekly-list{grid-auto-flow:row;grid-template-rows:none}}
 @media(max-width:900px){.viewport-frame{display:contents}}
 
 /* Reserve the sidebar before sizing the content, rather than overflowing under it. */
