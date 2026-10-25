@@ -28,6 +28,13 @@ app.use((request, response, next) => {
 })
 app.use(cookieParser())
 app.use(express.json())
+app.use((request, response, next) => {
+  const started = performance.now()
+  response.on('finish', () => {
+    console.info(JSON.stringify({ event: 'request', method: request.method, path: request.path, status: response.statusCode, durationMs: Math.round(performance.now() - started) }))
+  })
+  next()
+})
 app.use(sessionContext)
 
 app.get('/api/health', (_request, response) => {

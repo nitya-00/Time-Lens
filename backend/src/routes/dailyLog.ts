@@ -25,8 +25,7 @@ function parseDate(value: string) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-async function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>, profile: Awaited<ReturnType<typeof getLocalProfile>>) {
-  const categories = await getUserCategories(profile.id)
+function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>, profile: Awaited<ReturnType<typeof getLocalProfile>>, categories: Awaited<ReturnType<typeof getUserCategories>>) {
   return {
     date: log.date.toISOString().slice(0, 10),
     blocks: log.hourlyBlocks.map((block) => ({
@@ -57,8 +56,8 @@ router.get('/categories', async (_request, response, next) => {
 router.get('/daily-log/today', async (_request, response, next) => {
   try {
     const profile = await getLocalProfile()
-    const log = await getOrCreateDailyLog(profile.id, todayInTimeZone(profile.timeZone))
-    response.json(await toDailyLogResponse(log, profile))
+    const [log, categories] = await Promise.all([getOrCreateDailyLog(profile.id, todayInTimeZone(profile.timeZone)), getUserCategories(profile.id)])
+    response.json(toDailyLogResponse(log, profile, categories))
   } catch (error) {
     next(error)
   }
@@ -70,8 +69,8 @@ router.get('/daily-log/:date', async (request, response, next) => {
     if (!date) return response.status(400).json({ message: 'Please use a date in YYYY-MM-DD format.' })
 
     const profile = await getLocalProfile()
-    const log = await getOrCreateDailyLog(profile.id, date)
-    response.json(await toDailyLogResponse(log, profile))
+    const [log, categories] = await Promise.all([getOrCreateDailyLog(profile.id, date), getUserCategories(profile.id)])
+    response.json(toDailyLogResponse(log, profile, categories))
   } catch (error) {
     next(error)
   }
