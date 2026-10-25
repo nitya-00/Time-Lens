@@ -11,12 +11,18 @@ export const defaultCategories: Array<{ name: string; group: CategoryGroup }> = 
 export const defaultDistractionOptions = ['Phone', 'YouTube', 'Friends', 'Unexpected work', 'Tired', 'Procrastination']
 
 export async function getUserCategories(userId: string) {
-  await prisma.$transaction(defaultCategories.map((category) => prisma.category.upsert({
-    where: { userId_name: { userId, name: category.name } },
-    update: { group: category.group },
-    create: { userId, ...category },
-  })))
-  return prisma.category.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } })
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { categoriesInitialized: true } })
+  if (!user.categoriesInitialized) {
+    await prisma.$transaction([
+      ...defaultCategories.map((category) => prisma.category.upsert({
+        where: { userId_name: { userId, name: category.name } },
+        update: { group: category.group, isActive: true },
+        create: { userId, ...category },
+      })),
+      prisma.user.update({ where: { id: userId }, data: { categoriesInitialized: true } }),
+    ])
+  }
+  return prisma.category.findMany({ where: { userId, isActive: true }, orderBy: { createdAt: 'asc' } })
 }
 
 export function readDistractionOptions(value: unknown) {

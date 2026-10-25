@@ -28,6 +28,7 @@ model User {
   habitOverrides HabitOverride[]
   categories   Category[]
   distractionOptions Json?
+  categoriesInitialized Boolean @default(false)
 }
 
 model Category {
@@ -36,6 +37,7 @@ model Category {
   userId       String?
   group        CategoryGroup
   createdAt    DateTime      @default(now())
+  isActive     Boolean       @default(true)
   hourlyBlocks HourlyBlock[]
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 

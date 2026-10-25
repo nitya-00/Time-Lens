@@ -59,7 +59,7 @@ test('dashboard endpoint returns real summaries with cautious empty-data guidanc
     const response = await agent.get(`/api/analytics/dashboard?date=${date}`)
     assert.equal(response.status, 200)
     assert.equal(response.body.cards.length, 8)
-    assert.deepEqual(response.body.cards.map((card: { name: string }) => card.name), ['Work', 'Study', 'Sleep', 'House', 'Health', 'Personal', 'Fun', 'Other'])
+    assert.deepEqual(response.body.cards.map((card: { name: string }) => card.name), ['Study', 'Work', 'Sleep', 'House', 'Health', 'Personal', 'Other', 'Fun'])
     assert.equal(response.body.studyBreakdown.length, 0)
     assert.match(response.body.insight, /Not enough data yet/)
     assert.deepEqual(response.body.challenge, { completedDays: 0, targetDays: 100, percentage: 0 })

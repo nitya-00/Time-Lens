@@ -9,10 +9,10 @@ after(async () => {
 })
 
 test('creates 24 fixed blocks and updates only the selected block', async () => {
-  const user = await prisma.user.create({ data: { email: `phase2-${crypto.randomUUID()}@timelens.local` } })
+  const user = await prisma.user.create({ data: { email: `phase2-${crypto.randomUUID()}@timelens.local`, categories: { create: { name: 'DSA', group: 'STUDY' } } } })
 
   try {
-    const category = await prisma.category.findUniqueOrThrow({ where: { name: 'DSA' } })
+    const category = await prisma.category.findUniqueOrThrow({ where: { userId_name: { userId: user.id, name: 'DSA' } } })
     const log = await getOrCreateDailyLog(user.id, new Date('2026-09-25T00:00:00.000Z'))
     assert.equal(log.hourlyBlocks.length, 24)
     assert.deepEqual(log.hourlyBlocks.map((block) => block.hourIndex), Array.from({ length: 24 }, (_, index) => index))
