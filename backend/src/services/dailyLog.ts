@@ -1,4 +1,4 @@
-import { DistractionType } from '../generated/prisma/client.js'
+import { DistractionType, Prisma } from '../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
 
 const HOUR_BLOCK_COUNT = 24
@@ -26,34 +26,32 @@ function dateOnly(date: Date) {
 }
 
 export async function getOrCreateDailyLog(userId: string, date: Date) {
-  const log = await prisma.dailyLog.upsert({
-    where: { userId_date: { userId, date: dateOnly(date) } },
-    update: {},
-    create: { userId, date: dateOnly(date) },
-  })
-
-  await prisma.hourlyBlock.createMany({
-    data: Array.from({ length: HOUR_BLOCK_COUNT }, (_, hourIndex) => ({
-      dailyLogId: log.id,
-      hourIndex,
-    })),
-    skipDuplicates: true,
-  })
-
-  const dateKey = dateOnly(date).toISOString().slice(0, 10)
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
-  if (user?.email?.toLowerCase() === PRIVATE_SCHEDULE_EMAIL && dateKey >= SCHEDULE_START && dateKey <= SCHEDULE_END) {
-    await prisma.$transaction(privateSchedule.map((item, hourIndex) => prisma.hourlyBlock.updateMany({
-      where: { dailyLogId: log.id, hourIndex, plannedTask: null },
-      data: { plannedTask: item.task },
-    })))
-    // Categories are intentionally not prefilled: they describe what actually happened, not the plan.
-  }
-
-  return prisma.dailyLog.findUniqueOrThrow({
-    where: { id: log.id },
+  const normalizedDate = dateOnly(date)
+  const existing = await prisma.dailyLog.findUnique({
+    where: { userId_date: { userId, date: normalizedDate } },
     include: { hourlyBlocks: { include: { category: true }, orderBy: { hourIndex: 'asc' } } },
   })
+  if (existing) return existing
+
+  const dateKey = normalizedDate.toISOString().slice(0, 10)
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } })
+  const hasPrivateSchedule = user.email?.toLowerCase() === PRIVATE_SCHEDULE_EMAIL && dateKey >= SCHEDULE_START && dateKey <= SCHEDULE_END
+  const blocks = Array.from({ length: HOUR_BLOCK_COUNT }, (_, hourIndex) => ({
+    hourIndex,
+    plannedTask: hasPrivateSchedule ? privateSchedule[hourIndex]?.task ?? null : null,
+  }))
+  try {
+    return await prisma.dailyLog.create({
+      data: { userId, date: normalizedDate, hourlyBlocks: { create: blocks } },
+      include: { hourlyBlocks: { include: { category: true }, orderBy: { hourIndex: 'asc' } } },
+    })
+  } catch (error) {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error
+    return prisma.dailyLog.findUniqueOrThrow({
+      where: { userId_date: { userId, date: normalizedDate } },
+      include: { hourlyBlocks: { include: { category: true }, orderBy: { hourIndex: 'asc' } } },
+    })
+  }
 }
 
 type HourlyBlockUpdate = {

@@ -5,6 +5,7 @@ import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
 import { getOrCreateDailyLog, updateHourlyBlock } from '../services/dailyLog.js'
 import { getUserCategories } from '../services/categories.js'
+import { readDistractionOptions } from '../services/categories.js'
 import { todayInTimeZone } from '../lib/dates.js'
 
 const router = Router()
@@ -24,7 +25,8 @@ function parseDate(value: string) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>) {
+async function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>, profile: Awaited<ReturnType<typeof getLocalProfile>>) {
+  const categories = await getUserCategories(profile.id)
   return {
     date: log.date.toISOString().slice(0, 10),
     blocks: log.hourlyBlocks.map((block) => ({
@@ -37,6 +39,8 @@ function toDailyLogResponse(log: Awaited<ReturnType<typeof getOrCreateDailyLog>>
       customDistraction: block.customDistraction,
       missedPlanReason: block.missedPlanReason,
     })),
+    categories: categories.map((category) => ({ name: category.name, id: category.id })),
+    distractionOptions: readDistractionOptions(profile.distractionOptions),
   }
 }
 
@@ -54,7 +58,7 @@ router.get('/daily-log/today', async (_request, response, next) => {
   try {
     const profile = await getLocalProfile()
     const log = await getOrCreateDailyLog(profile.id, todayInTimeZone(profile.timeZone))
-    response.json(toDailyLogResponse(log))
+    response.json(await toDailyLogResponse(log, profile))
   } catch (error) {
     next(error)
   }
@@ -67,7 +71,7 @@ router.get('/daily-log/:date', async (request, response, next) => {
 
     const profile = await getLocalProfile()
     const log = await getOrCreateDailyLog(profile.id, date)
-    response.json(toDailyLogResponse(log))
+    response.json(await toDailyLogResponse(log, profile))
   } catch (error) {
     next(error)
   }

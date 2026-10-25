@@ -1,15 +1,15 @@
-import { ChangeEvent, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { ChangeEvent, lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { apiFetch, localDateInput } from './lib/api'
 import { NavLink, Route, Routes } from 'react-router-dom'
-import Dashboard from './Dashboard'
-import Analytics from './Analytics'
-import Goals from './Goals'
-import Challenge from './Challenge'
-import Checkins from './Checkins'
-import Experiments from './Experiments'
-import Auth from './Auth'
-import Account from './Account'
 import { GuestPreview } from './GuestPreview'
+const Dashboard = lazy(() => import('./Dashboard'))
+const Analytics = lazy(() => import('./Analytics'))
+const Goals = lazy(() => import('./Goals'))
+const Challenge = lazy(() => import('./Challenge'))
+const Checkins = lazy(() => import('./Checkins'))
+const Experiments = lazy(() => import('./Experiments'))
+const Auth = lazy(() => import('./Auth'))
+const Account = lazy(() => import('./Account'))
 
 type Category = { id: string; name: string }
 type Distraction = 'NONE' | 'PHONE' | 'YOUTUBE' | 'FRIENDS' | 'UNEXPECTED_WORK' | 'TIRED' | 'PROCRASTINATION' | 'OTHER'
@@ -23,7 +23,7 @@ type HourlyBlock = {
   customDistraction: string | null
   missedPlanReason: string | null
 }
-type DailyLog = { date: string; blocks: HourlyBlock[] }
+type DailyLog = { date: string; blocks: HourlyBlock[]; categories: Category[]; distractionOptions: string[] }
 const legacyDistractionLabels: Record<Exclude<Distraction, 'NONE' | 'OTHER'>, string> = { PHONE: 'Phone', YOUTUBE: 'YouTube', FRIENDS: 'Friends', UNEXPECTED_WORK: 'Unexpected work', TIRED: 'Tired', PROCRASTINATION: 'Procrastination' }
 
 function addDays(date: string, days: number) {
@@ -67,22 +67,19 @@ function DailyLogPage() {
   const dateRef = useRef(date)
   const saving = useRef(new Set<number>())
   const versions = useRef<Record<number, number>>({})
+  const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
 
   const loadDay = useCallback(async (selectedDate: string) => {
     setMessage('')
     try {
-      const [logResponse, categoryResponse, accountResponse] = await Promise.all([
-        apiFetch(`/api/daily-log/${selectedDate}`),
-        apiFetch('/api/categories'),
-        apiFetch('/api/auth/account'),
-      ])
-      if (logResponse.status === 401 || categoryResponse.status === 401 || accountResponse.status === 401) { setGuest(true); return }
-      if (!logResponse.ok || !categoryResponse.ok || !accountResponse.ok) throw new Error('Could not load the daily log.')
+      const logResponse = await apiFetch(`/api/daily-log/${selectedDate}`)
+      if (logResponse.status === 401) { setGuest(true); return }
+      if (!logResponse.ok) throw new Error('Could not load the daily log.')
       const loaded = await logResponse.json() as DailyLog
       logRef.current = loaded
       setLog(loaded)
-      setCategories((await categoryResponse.json() as { categories: Category[] }).categories)
-      setDistractionOptions((await accountResponse.json() as { distractionOptions: string[] }).distractionOptions)
+      setCategories(loaded.categories)
+      setDistractionOptions(loaded.distractionOptions)
     } catch {
       setMessage('Unable to load this day. Please refresh and try again.')
     }
@@ -137,9 +134,15 @@ function DailyLogPage() {
     } finally { saving.current.delete(hourIndex) }
   }
 
-  function updateAndSave(hourIndex: number, values: Partial<HourlyBlock>) {
+  function updateAndSave(hourIndex: number, values: Partial<HourlyBlock>, debounceMs = 0) {
     updateDraft(hourIndex, values)
     versions.current[hourIndex] = (versions.current[hourIndex] ?? 0) + 1
+    if (debounceMs) {
+      clearTimeout(debounceTimers.current[hourIndex])
+      debounceTimers.current[hourIndex] = setTimeout(() => void saveLatest(hourIndex), debounceMs)
+      return
+    }
+    clearTimeout(debounceTimers.current[hourIndex])
     void saveLatest(hourIndex)
   }
 
@@ -177,7 +180,7 @@ function DailyLogPage() {
             {log?.blocks.map((block) => <tr key={block.hourIndex}>
               <th scope="row">{hourLabel(block.hourIndex)}</th>
               <td><select aria-label={`${hourLabel(block.hourIndex)} category`} value={block.categoryId ?? ''} onChange={(event) => { const category = categories.find((item) => item.id === event.target.value); updateAndSave(block.hourIndex, { categoryId: event.target.value || null, category: category ? { name: category.name } : null }) }}><option value="">—</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></td>
-              <td><input aria-label={`${hourLabel(block.hourIndex)} activity`} value={block.activity ?? ''} placeholder="What did you do?" onChange={(event) => updateAndSave(block.hourIndex, { activity: event.target.value })} onBlur={() => void saveLatest(block.hourIndex)} /></td>
+              <td><input aria-label={`${hourLabel(block.hourIndex)} activity`} value={block.activity ?? ''} placeholder="What did you do?" onChange={(event) => updateAndSave(block.hourIndex, { activity: event.target.value }, 700)} onBlur={() => { clearTimeout(debounceTimers.current[block.hourIndex]); void saveLatest(block.hourIndex) }} /></td>
               <td><select aria-label={`${hourLabel(block.hourIndex)} planned task`} value={block.plannedTask ?? ''} onChange={(event) => updateAndSave(block.hourIndex, { plannedTask: event.target.value || null })}><option value="">Optional</option>{categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}</select></td>
               <td><select aria-label={`${hourLabel(block.hourIndex)} distraction`} value={block.distraction === 'NONE' ? '' : block.customDistraction ?? (block.distraction === 'OTHER' ? 'Other' : legacyDistractionLabels[block.distraction])} onChange={(event) => { const label = event.target.value; updateAndSave(block.hourIndex, label ? { distraction: 'OTHER', customDistraction: label } : { distraction: 'NONE', customDistraction: null }) }}><option value="">None</option>{[...new Set([...distractionOptions, ...Object.values(legacyDistractionLabels), block.distraction === 'OTHER' && !block.customDistraction ? 'Other' : ''])].filter(Boolean).map((label) => <option key={label} value={label}>{label}</option>)}</select></td>
             </tr>)}
@@ -191,5 +194,5 @@ function DailyLogPage() {
 export default function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('timelens-dark-mode') !== 'false')
   useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('timelens-dark-mode', String(dark)) }, [dark])
-  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Time<span>Lens</span></span></NavLink><div className="nav-links"><NavLink to="/">Today</NavLink><NavLink to="/dashboard">Overview</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀' : '☾'} <span>{dark ? 'Light mode' : 'Dark mode'}</span></button><ProfilePhoto /><NavLink to="/account">Account</NavLink></div></nav><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/account" element={<Account />} /><Route path="/auth" element={<Auth />} /></Routes></>
+  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Time<span>Lens</span></span></NavLink><div className="nav-links"><NavLink to="/">Today</NavLink><NavLink to="/dashboard">Overview</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀' : '☾'} <span>{dark ? 'Light mode' : 'Dark mode'}</span></button><ProfilePhoto /><NavLink to="/account">Account</NavLink></div></nav><Suspense fallback={<main className="dashboard-shell"><p className="quiet">Loading…</p></main>}><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/account" element={<Account />} /><Route path="/auth" element={<Auth />} /></Routes></Suspense></>
 }
