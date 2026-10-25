@@ -14,8 +14,8 @@ export function GuestPreview({ eyebrow, title, description, points }: GuestPrevi
       <h1>{title}</h1>
       <p className="quiet">{description}</p>
       <ul>{points.map(point => <li key={point}>{point}</li>)}</ul>
-      <Link className="guest-preview-action" to="/auth">Create your private space <span>→</span></Link>
-      <p className="guest-preview-note">Your details stay private until you choose to create an account.</p>
+      <Link className="guest-preview-action" to="/auth">Create your space <span>→</span></Link>
+      <p className="guest-preview-note">A simple place to make your time feel more intentional.</p>
     </section>
   </main>
 }
