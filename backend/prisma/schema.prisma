@@ -14,6 +14,11 @@ model User {
   displayName  String       @default("My profile")
   createdAt    DateTime     @default(now())
   passwordHash String?
+  productiveDayEnabled Boolean @default(false)
+  productiveStudyHours Float @default(0)
+  productiveWorkHours  Float @default(0)
+  productiveFunHours   Float @default(0)
+  productiveHealthHours Float @default(0)
   challenges   Challenge[]
   checkIns     CheckIn[]
   dailyLogs    DailyLog[]
