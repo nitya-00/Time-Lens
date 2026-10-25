@@ -1,12 +1,15 @@
 import { DistractionType, type HourlyBlock } from '../generated/prisma/client.js'
 
-export const distractionTypes = new Set<DistractionType>([
-  DistractionType.PHONE, DistractionType.YOUTUBE, DistractionType.FRIENDS, DistractionType.TIRED, DistractionType.PROCRASTINATION,
-])
+export const distractionTypes = new Set<DistractionType>(Object.values(DistractionType).filter(type => type !== DistractionType.NONE))
 export type LoggedBlock = HourlyBlock & { category: { name: string } | null }
 
 export function isDistraction(block: Pick<HourlyBlock, 'distraction' | 'customDistraction'>) {
-  return distractionTypes.has(block.distraction) || (block.distraction === DistractionType.OTHER && !!block.customDistraction)
+  return distractionTypes.has(block.distraction)
+}
+
+export function isPhoneUse(block: Pick<HourlyBlock, 'distraction' | 'customDistraction' | 'activity'> & { category?: { name: string } | null }) {
+  const values = [block.activity, block.customDistraction, block.category?.name, block.distraction.replaceAll('_', ' ')].filter(Boolean).map(value => value!.trim().toLowerCase())
+  return values.some(value => value === 'phone' || value === 'youtube')
 }
 
 export function isOptionalPlan(value: string | null) {

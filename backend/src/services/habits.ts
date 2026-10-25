@@ -1,6 +1,6 @@
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
-import { categoryHours, isDistraction, type LoggedBlock } from './timeRules.js'
+import { categoryHours, isDistraction, isPhoneUse, type LoggedBlock } from './timeRules.js'
 
 const day = (value: Date) => new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
 const shift = (value: Date, offset: number) => new Date(value.getTime() + offset * 86_400_000)
@@ -9,10 +9,7 @@ type DayResult = { date: string; phoneBeforeSleep: HabitValue; phoneAfterWaking:
 type LogWithBlocks = { date: Date; hourlyBlocks: LoggedBlock[] }
 
 export function hasPhoneUse(block: LoggedBlock | undefined) {
-  if (!block) return false
-  const activity = block.activity?.trim().toLowerCase() ?? ''
-  const category = block.category?.name.trim().toLowerCase() ?? ''
-  return ['phone', 'youtube'].includes(activity) || ['phone', 'youtube'].includes(category) || block.distraction === 'PHONE' || block.distraction === 'YOUTUBE'
+  return !!block && isPhoneUse(block)
 }
 
 function isEntered(blocks: LoggedBlock[]) { return blocks.some(block => !!block.category || !!block.activity?.trim() || isDistraction(block)) }

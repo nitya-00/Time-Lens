@@ -24,6 +24,7 @@ type HourlyBlock = {
   missedPlanReason: string | null
 }
 type DailyLog = { date: string; blocks: HourlyBlock[] }
+const legacyDistractionLabels: Record<Exclude<Distraction, 'NONE' | 'OTHER'>, string> = { PHONE: 'Phone', YOUTUBE: 'YouTube', FRIENDS: 'Friends', UNEXPECTED_WORK: 'Unexpected work', TIRED: 'Tired', PROCRASTINATION: 'Procrastination' }
 
 function addDays(date: string, days: number) {
   const next = new Date(`${date}T12:00:00`)
@@ -178,7 +179,7 @@ function DailyLogPage() {
               <td><select aria-label={`${hourLabel(block.hourIndex)} category`} value={block.categoryId ?? ''} onChange={(event) => { const category = categories.find((item) => item.id === event.target.value); updateAndSave(block.hourIndex, { categoryId: event.target.value || null, category: category ? { name: category.name } : null }) }}><option value="">—</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></td>
               <td><input aria-label={`${hourLabel(block.hourIndex)} activity`} value={block.activity ?? ''} placeholder="What did you do?" onChange={(event) => updateAndSave(block.hourIndex, { activity: event.target.value })} onBlur={() => void saveLatest(block.hourIndex)} /></td>
               <td><select aria-label={`${hourLabel(block.hourIndex)} planned task`} value={block.plannedTask ?? ''} onChange={(event) => updateAndSave(block.hourIndex, { plannedTask: event.target.value || null })}><option value="">Optional</option>{categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}</select></td>
-              <td><select aria-label={`${hourLabel(block.hourIndex)} distraction`} value={block.distraction === 'NONE' ? '' : block.customDistraction ?? ''} onChange={(event) => { const label = event.target.value; updateAndSave(block.hourIndex, label ? { distraction: 'OTHER', customDistraction: label } : { distraction: 'NONE', customDistraction: null }) }}><option value="">None</option>{distractionOptions.map((label) => <option key={label} value={label}>{label}</option>)}</select></td>
+              <td><select aria-label={`${hourLabel(block.hourIndex)} distraction`} value={block.distraction === 'NONE' ? '' : block.customDistraction ?? (block.distraction === 'OTHER' ? 'Other' : legacyDistractionLabels[block.distraction])} onChange={(event) => { const label = event.target.value; updateAndSave(block.hourIndex, label ? { distraction: 'OTHER', customDistraction: label } : { distraction: 'NONE', customDistraction: null }) }}><option value="">None</option>{[...new Set([...distractionOptions, ...Object.values(legacyDistractionLabels), block.distraction === 'OTHER' && !block.customDistraction ? 'Other' : ''])].filter(Boolean).map((label) => <option key={label} value={label}>{label}</option>)}</select></td>
             </tr>)}
           </tbody>
         </table>

@@ -15,6 +15,17 @@ import { AuthenticationError, sessionContext } from './lib/authContext.js'
 const app = express()
 
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173', credentials: true }))
+app.use((request, response, next) => {
+  response.setHeader('X-Content-Type-Options', 'nosniff')
+  response.setHeader('X-Frame-Options', 'DENY')
+  response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+    const origin = request.get('origin')
+    const allowed = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173'
+    if (origin && origin !== allowed) return response.status(403).json({ message: 'Request origin is not allowed.' })
+  }
+  next()
+})
 app.use(cookieParser())
 app.use(express.json())
 app.use(sessionContext)

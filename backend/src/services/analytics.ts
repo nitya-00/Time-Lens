@@ -1,7 +1,7 @@
 import { CategoryGroup, DistractionType, type HourlyBlock } from '../generated/prisma/client.js'
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
-import { categoryHours, distractionHours, isDistraction, isPlanComplete, isOptionalPlan, roundHours } from './timeRules.js'
+import { categoryHours, distractionHours, isDistraction, isPhoneUse, isPlanComplete, isOptionalPlan, roundHours } from './timeRules.js'
 import { getUserCategories } from './categories.js'
 type Block = HourlyBlock & { category: { name: string; group: CategoryGroup } | null }
 
@@ -53,7 +53,7 @@ export async function getPeriodAnalytics(days: number, endDate = new Date()) {
     result[activity] = (result[activity] ?? 0) + categoryHours(block, 'Other')
     return result
   }, {})
-  const phoneDistractions = roundHours(current.filter((block) => block.distraction === DistractionType.PHONE).reduce((sum, block) => sum + distractionHours(block), 0))
+  const phoneDistractions = roundHours(current.filter(isPhoneUse).reduce((sum, block) => sum + distractionHours(block), 0))
 
   return { days, loggedHours: filled.length, totalSlots, categories, hourly, planned: { total: planned.length, completed: completed.length, diverted: planned.length - completed.length, completionPercentage: planned.length ? Number(((completed.length / planned.length) * 100).toFixed(1)) : null }, distractions: distractionCounts, phoneDistractions, studyBreakdown, otherActivities: Object.entries(otherActivities).map(([name, hours]) => ({ name, hours })) }
 }

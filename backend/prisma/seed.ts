@@ -19,7 +19,9 @@ const categories: Array<[string, CategoryGroup]> = [
 
 async function seed() {
   for (const [name, group] of categories) {
-    await prisma.category.upsert({ where: { name }, update: { group }, create: { name, group } })
+    const existing = await prisma.category.findFirst({ where: { name, userId: null } })
+    if (existing) await prisma.category.update({ where: { id: existing.id }, data: { group } })
+    else await prisma.category.create({ data: { name, group } })
   }
 }
 

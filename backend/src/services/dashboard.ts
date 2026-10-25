@@ -1,7 +1,6 @@
 import { CategoryGroup, type HourlyBlock } from '../generated/prisma/client.js'
 import { getLocalProfile } from '../lib/localProfile.js'
 import { prisma } from '../lib/prisma.js'
-import { getOrCreateDailyLog } from './dailyLog.js'
 import { getUserCategories } from './categories.js'
 import { categoryHours, distractionHours, isPlanComplete, isOptionalPlan, roundHours } from './timeRules.js'
 
@@ -30,7 +29,6 @@ export async function getDashboard(date = new Date()) {
   const profile = await getLocalProfile()
   const cardGroups = (await getUserCategories(profile.id)).map((category) => category.name)
   const selectedDay = startOfDay(date)
-  await getOrCreateDailyLog(profile.id, selectedDay)
   const yesterday = addDays(selectedDay, -1)
   const dayLogs = await prisma.dailyLog.findMany({
     where: { userId: profile.id, date: { in: [selectedDay, yesterday] } },

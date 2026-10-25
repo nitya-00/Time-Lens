@@ -29,6 +29,7 @@ model User {
   categories   Category[]
   distractionOptions Json?
   categoriesInitialized Boolean @default(false)
+  timeZone     String       @default("UTC")
 }
 
 model Category {
