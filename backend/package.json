@@ -16,25 +16,25 @@
     "test": "tsx --test src/*.test.ts src/**/*.test.ts"
   },
   "dependencies": {
-    "@prisma/client": "7.10.0",
     "@prisma/adapter-pg": "7.10.0",
-    "cors": "latest",
+    "@prisma/client": "^7.10.1",
     "bcryptjs": "latest",
     "cookie-parser": "latest",
+    "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
     "jsonwebtoken": "latest",
     "pg": "latest",
-    "zod": "latest"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/cors": "latest",
     "@types/cookie-parser": "latest",
+    "@types/cors": "latest",
     "@types/express": "latest",
-    "@types/node": "latest",
     "@types/jsonwebtoken": "latest",
+    "@types/node": "latest",
     "@types/pg": "latest",
-    "prisma": "7.10.0",
+    "prisma": "^7.10.1",
     "supertest": "latest",
     "tsx": "latest",
     "typescript": "latest"
