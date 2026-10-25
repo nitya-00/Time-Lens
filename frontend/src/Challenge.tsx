@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { apiFetch } from './lib/api'
+import { GuestPreview } from './GuestPreview'
 
 type Entry = { id: string; dayNumber: number; date: string; description: string; category: string }
 type Data = { dayNumber: number; targetDays: number; progress: number; completedDays: number; todayEntries: number; entries: Entry[]; distribution: Array<{ category: string; count: number; percentage: number }> }
@@ -13,10 +14,12 @@ export default function Challenge() {
   const [category, setCategory] = useState('SKILL')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  const [guest, setGuest] = useState(false)
 
   const load = async () => {
     try {
       const response = await apiFetch('/api/challenge')
+      if (response.status === 401) { setGuest(true); return }
       if (!response.ok) throw new Error()
       setData(await response.json() as Data)
     } catch { setMessage('Unable to load the challenge. Please refresh and try again.') }
@@ -38,6 +41,7 @@ export default function Challenge() {
     } finally { setSaving(false) }
   }
 
+  if (guest) return <GuestPreview eyebrow="100 DAYS" title="Try one new thing at a time." description="Turn curiosity into a personal story with a simple daily record of what you explored." points={['Capture new experiences in seconds', 'Build a memorable 100-day streak', 'Look back on how far you went']} />
   if (!data) return <main className="dashboard-shell"><p className="quiet">Loading your challenge…</p></main>
   const today = data.entries.filter((entry) => entry.dayNumber === data.dayNumber)
 

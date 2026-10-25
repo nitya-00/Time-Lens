@@ -8,6 +8,7 @@ import Challenge from './Challenge'
 import Checkins from './Checkins'
 import Experiments from './Experiments'
 import Auth from './Auth'
+import { GuestPreview } from './GuestPreview'
 
 type Category = { id: string; name: string }
 type Distraction = 'NONE' | 'PHONE' | 'YOUTUBE' | 'FRIENDS' | 'UNEXPECTED_WORK' | 'TIRED' | 'PROCRASTINATION' | 'OTHER'
@@ -105,6 +106,7 @@ function DailyLogPage() {
   const [log, setLog] = useState<DailyLog | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [message, setMessage] = useState('')
+  const [guest, setGuest] = useState(false)
   const logRef = useRef<DailyLog | null>(null)
   const dateRef = useRef(date)
   const saving = useRef(new Set<number>())
@@ -117,6 +119,7 @@ function DailyLogPage() {
         apiFetch(`/api/daily-log/${selectedDate}`),
         apiFetch('/api/categories'),
       ])
+      if (logResponse.status === 401 || categoryResponse.status === 401) { setGuest(true); return }
       if (!logResponse.ok || !categoryResponse.ok) throw new Error('Could not load the daily log.')
       const loaded = await logResponse.json() as DailyLog
       logRef.current = loaded
@@ -192,6 +195,8 @@ function DailyLogPage() {
   const distractionPercentage = filledBlocks ? Math.round((distractionBlocks / filledBlocks) * 100) : 0
   const selectedDay = new Date(`${date}T12:00:00`)
   const formattedDate = selectedDay.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+
+  if (guest) return <GuestPreview eyebrow="TODAY" title="Give each hour a little intention." description="A private daily log helps you notice what deserves more of your time - and what does not." points={['Plan a clear, flexible day', 'Keep a gentle record of your time', 'Reflect without judgment']} />
 
   return (
     <main className="app-shell daily-workspace">

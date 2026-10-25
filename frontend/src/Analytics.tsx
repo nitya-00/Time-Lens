@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiFetch, localDateInput } from './lib/api'
+import { GuestPreview } from './GuestPreview'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 type AnalyticsData = {
@@ -19,15 +20,18 @@ export default function Analytics() {
   const [days, setDays] = useState(7)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState(false)
+  const [guest, setGuest] = useState(false)
 
   useEffect(() => {
     setData(null); setError(false)
     apiFetch(`/api/analytics/${days}?date=${localDateInput()}`).then(async (response) => {
-      if (!response.ok) throw new Error('Analytics request failed')
+        if (response.status === 401) { setGuest(true); return }
+        if (!response.ok) throw new Error('Analytics request failed')
       setData(await response.json() as AnalyticsData)
     }).catch(() => setError(true))
   }, [days])
 
+  if (guest) return <GuestPreview eyebrow="YOUR PATTERNS" title="Find your best focus window." description="Once you log a few days, your analytics reveal the hours and activities that help you make progress." points={['Compare focus time across days', 'See the rhythm behind productive weeks', 'Turn gentle patterns into better plans']} />
   if (error) return <main className="dashboard-shell"><p className="notice">Unable to load analytics. Please refresh and try again.</p></main>
   if (!data) return <main className="dashboard-shell"><p className="quiet">Calculating your patterns…</p></main>
   return <main className="dashboard-shell">

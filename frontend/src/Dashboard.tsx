@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiFetch, localDateInput } from './lib/api'
+import { GuestPreview } from './GuestPreview'
 
 type Card = { name: string; hours: number; dayPercentage: number; changePercentage: number | null }
 type DashboardData = {
@@ -28,6 +29,7 @@ function addDays(date: string, days: number) {
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState(false)
+  const [guest, setGuest] = useState(false)
   const [engine, setEngine] = useState<{level:string;insight:string;recommendation:string}|null>(null)
   const [date, setDate] = useState(localDateInput())
 
@@ -35,6 +37,7 @@ export default function Dashboard() {
     setError(false)
     apiFetch(`/api/analytics/dashboard?date=${date}`)
       .then(async (response) => {
+        if (response.status === 401) { setGuest(true); return }
         if (!response.ok) throw new Error('Dashboard request failed')
         setData(await response.json() as DashboardData)
       })
@@ -42,6 +45,7 @@ export default function Dashboard() {
   }, [date])
   useEffect(()=>{apiFetch('/api/insights').then(async r=>setEngine(await r.json() as {level:string;insight:string;recommendation:string})).catch(()=>undefined)},[])
 
+  if (guest) return <GuestPreview eyebrow="YOUR TIME, CLEARER" title="A calmer way to see your day." description="TimeLens turns the moments you log into a focused view of what is working for you." points={['See where your focused hours go', 'Spot small wins and useful patterns', 'Build a day that matches your priorities']} />
   if (error) return <main className="dashboard-shell"><p className="notice">Unable to load your dashboard. Please refresh and try again.</p></main>
   if (!data) return <main className="dashboard-shell"><p className="quiet">Loading your day…</p></main>
 
