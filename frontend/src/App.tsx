@@ -1,6 +1,6 @@
-import { ChangeEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { apiFetch, localDateInput } from './lib/api'
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { NavLink, Route, Routes } from 'react-router-dom'
 import Dashboard from './Dashboard'
 import Analytics from './Analytics'
 import Goals from './Goals'
@@ -56,49 +56,6 @@ function ProfilePhoto() {
     {photo ? <img src={photo} alt="Your profile" /> : <span>✦</span>}
     <input type="file" accept="image/*" onChange={choosePhoto} />
   </label>
-}
-
-function ViewportFrame({ children }: { children: React.ReactNode }) {
-  const frameRef = useRef<HTMLDivElement>(null)
-  const location = useLocation()
-
-  useLayoutEffect(() => {
-    const frame = frameRef.current
-    const page = frame?.querySelector<HTMLElement>('main')
-    if (!frame || !page) return
-
-    let animationFrame = 0
-    const fit = () => {
-      page.style.setProperty('--page-scale', '1')
-      const availableHeight = window.innerHeight - page.offsetTop - 8
-      const availableWidth = window.innerWidth - page.offsetLeft - 8
-      const scale = Math.min(1, availableHeight / page.scrollHeight, availableWidth / page.scrollWidth)
-      page.style.setProperty('--page-scale', String(scale))
-    }
-    const scheduleFit = () => {
-      cancelAnimationFrame(animationFrame)
-      animationFrame = requestAnimationFrame(fit)
-    }
-
-    const observer = new ResizeObserver(scheduleFit)
-    const contentObserver = new MutationObserver(scheduleFit)
-    observer.observe(page)
-    contentObserver.observe(page, { childList: true, subtree: true, characterData: true })
-    window.addEventListener('resize', scheduleFit)
-    window.visualViewport?.addEventListener('resize', scheduleFit)
-    window.visualViewport?.addEventListener('scroll', scheduleFit)
-    scheduleFit()
-    return () => {
-      cancelAnimationFrame(animationFrame)
-      observer.disconnect()
-      contentObserver.disconnect()
-      window.removeEventListener('resize', scheduleFit)
-      window.visualViewport?.removeEventListener('resize', scheduleFit)
-      window.visualViewport?.removeEventListener('scroll', scheduleFit)
-    }
-  }, [location.pathname])
-
-  return <div className="viewport-frame" ref={frameRef}>{children}</div>
 }
 
 function DailyLogPage() {
@@ -234,5 +191,5 @@ function DailyLogPage() {
 export default function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('timelens-dark-mode') !== 'false')
   useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('timelens-dark-mode', String(dark)) }, [dark])
-  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Time<span>Lens</span></span></NavLink><div className="nav-links"><NavLink to="/">Today</NavLink><NavLink to="/dashboard">Overview</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀' : '☾'} <span>{dark ? 'Light mode' : 'Dark mode'}</span></button><ProfilePhoto /><NavLink to="/auth">Account</NavLink></div></nav><ViewportFrame><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/auth" element={<Auth />} /></Routes></ViewportFrame></>
+  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Time<span>Lens</span></span></NavLink><div className="nav-links"><NavLink to="/">Today</NavLink><NavLink to="/dashboard">Overview</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀' : '☾'} <span>{dark ? 'Light mode' : 'Dark mode'}</span></button><ProfilePhoto /><NavLink to="/auth">Account</NavLink></div></nav><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/auth" element={<Auth />} /></Routes></>
 }
