@@ -41,7 +41,7 @@ export default function Challenge() {
     } finally { setSaving(false) }
   }
 
-  if (guest) return <GuestPreview eyebrow="100 DAYS" title="Try one new thing at a time." description="Turn curiosity into a personal story with a simple daily record of what you explored." points={['Capture new experiences in seconds', 'Build a memorable 100-day streak', 'Look back on how far you went']} />
+  if (guest) return <GuestPreview eyebrow="100 DAYS" title="Try one new thing at a time." description="Turn curiosity into a personal story with a simple daily record of what you explored." points={['Capture new experiences in seconds', 'Build a memorable 100-day streak', 'Look back on how far you went']} cta="Begin my 100 days" />
   if (!data) return <main className="dashboard-shell"><p className="quiet">Loading your challenge…</p></main>
   const today = data.entries.filter((entry) => entry.dayNumber === data.dayNumber)
 

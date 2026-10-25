@@ -196,7 +196,7 @@ function DailyLogPage() {
   const selectedDay = new Date(`${date}T12:00:00`)
   const formattedDate = selectedDay.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
-  if (guest) return <GuestPreview eyebrow="TODAY" title="Give each hour a little intention." description="A private daily log helps you notice what deserves more of your time - and what does not." points={['Plan a clear, flexible day', 'Keep a gentle record of your time', 'Reflect without judgment']} />
+  if (guest) return <GuestPreview eyebrow="TODAY" title="Your time has a pattern." description="TimeLens helps you see it. Build a calmer day, one focused hour at a time." points={['Plan a clear, flexible day', 'Keep a gentle record of your time', 'Less guilt. More clarity.']} cta="Start planning my day" />
 
   return (
     <main className="app-shell daily-workspace">

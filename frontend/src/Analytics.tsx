@@ -31,7 +31,7 @@ export default function Analytics() {
     }).catch(() => setError(true))
   }, [days])
 
-  if (guest) return <GuestPreview eyebrow="YOUR PATTERNS" title="Find your best focus window." description="Once you log a few days, your analytics reveal the hours and activities that help you make progress." points={['Compare focus time across days', 'See the rhythm behind productive weeks', 'Turn gentle patterns into better plans']} />
+  if (guest) return <GuestPreview eyebrow="YOUR PATTERNS" title="Find your best focus window." description="Once you log a few days, your analytics reveal the hours and activities that help you make progress." points={['Compare focus time across days', 'See the rhythm behind productive weeks', 'Turn gentle patterns into better plans']} cta="Discover my patterns" />
   if (error) return <main className="dashboard-shell"><p className="notice">Unable to load analytics. Please refresh and try again.</p></main>
   if (!data) return <main className="dashboard-shell"><p className="quiet">Calculating your patterns…</p></main>
   return <main className="dashboard-shell">

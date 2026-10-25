@@ -45,7 +45,7 @@ export default function Dashboard() {
   }, [date])
   useEffect(()=>{apiFetch('/api/insights').then(async r=>setEngine(await r.json() as {level:string;insight:string;recommendation:string})).catch(()=>undefined)},[])
 
-  if (guest) return <GuestPreview eyebrow="YOUR TIME, CLEARER" title="A calmer way to see your day." description="TimeLens turns the moments you log into a focused view of what is working for you." points={['See where your focused hours go', 'Spot small wins and useful patterns', 'Build a day that matches your priorities']} />
+  if (guest) return <GuestPreview eyebrow="YOUR TIME, CLEARER" title="A calmer way to see your day." description="Turn the moments you log into a focused view of what is working for you." points={['See where your focused hours go', 'Spot small wins and useful patterns', 'Build a day that matches your priorities']} cta="See my time clearly" />
   if (error) return <main className="dashboard-shell"><p className="notice">Unable to load your dashboard. Please refresh and try again.</p></main>
   if (!data) return <main className="dashboard-shell"><p className="quiet">Loading your day…</p></main>
 
