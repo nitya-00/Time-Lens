@@ -9,6 +9,7 @@
     "db:migrate:deploy": "prisma migrate deploy --config prisma.config.ts",
     "db:pull": "prisma db pull --config prisma.config.ts",
     "db:seed": "tsx prisma/seed.ts",
+    "db:reconcile-categories": "tsx prisma/reconcileLegacyCategories.ts",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",

@@ -10,6 +10,16 @@ export const defaultCategories: Array<{ name: string; group: CategoryGroup }> = 
 
 export const defaultDistractionOptions = ['Phone', 'YouTube', 'Friends', 'Unexpected work', 'Tired', 'Procrastination']
 
+export async function reconcileLegacyCategoryLinks(userId: string) {
+  const categories = await prisma.category.findMany({ where: { userId, isActive: true }, select: { id: true, name: true } })
+  for (const category of categories) {
+    await prisma.hourlyBlock.updateMany({
+      where: { dailyLog: { userId }, category: { userId: null, name: category.name } },
+      data: { categoryId: category.id },
+    })
+  }
+}
+
 export async function getUserCategories(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { categoriesInitialized: true } })
   if (!user.categoriesInitialized) {
@@ -21,6 +31,7 @@ export async function getUserCategories(userId: string) {
       })),
       prisma.user.update({ where: { id: userId }, data: { categoriesInitialized: true } }),
     ])
+    await reconcileLegacyCategoryLinks(userId)
   }
   return prisma.category.findMany({ where: { userId, isActive: true }, orderBy: { createdAt: 'asc' } })
 }
