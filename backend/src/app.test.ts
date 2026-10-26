@@ -10,6 +10,7 @@ before(async () => {
   const email = `test-${crypto.randomUUID()}@timelens.local`
   const response = await agent.post('/api/auth/register').send({ email, password: 'password-123', displayName: 'Test User' })
   assert.equal(response.status, 200)
+  assert.match(response.headers['set-cookie'][0], /Max-Age=604800/)
   // The production cookie is Secure; explicitly retain it for Supertest's HTTP-only in-memory server.
   agent.set('Cookie', response.headers['set-cookie'])
   testUserId = (await prisma.user.findUniqueOrThrow({ where: { email } })).id
@@ -26,6 +27,20 @@ test('GET /api/health returns ok', async () => {
   assert.equal(response.status, 200)
   assert.equal(response.body.status, 'ok')
   assert.equal(response.body.frontendOrigin, process.env.FRONTEND_ORIGIN)
+})
+
+test('account profile exposes details and protects email changes with the current password', async () => {
+  const account = await agent.get('/api/auth/account')
+  assert.equal(account.status, 200)
+  assert.equal(account.body.displayName, 'Test User')
+  assert.match(account.body.email, /@timelens\.local$/)
+
+  const denied = await agent.put('/api/auth/account/profile').send({ displayName: 'Updated User', email: `updated-${crypto.randomUUID()}@timelens.local` })
+  assert.equal(denied.status, 401)
+
+  const renamed = await agent.put('/api/auth/account/profile').send({ displayName: 'Updated User', email: account.body.email })
+  assert.equal(renamed.status, 200)
+  assert.equal(renamed.body.displayName, 'Updated User')
 })
 
 test('daily-log endpoint returns 24 blocks and updates one selected block', async () => {
