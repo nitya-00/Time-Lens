@@ -1,7 +1,8 @@
 import { ChangeEvent, lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { apiFetch, localDateInput } from './lib/api'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { GuestPreview } from './GuestPreview'
+import { trackPageView } from './lib/googleAnalytics'
 const Dashboard = lazy(() => import('./Dashboard'))
 const Analytics = lazy(() => import('./Analytics'))
 const Goals = lazy(() => import('./Goals'))
@@ -54,6 +55,16 @@ function ProfilePhoto() {
     {photo ? <img src={photo} alt="Your profile" /> : <span>✦</span>}
     <input type="file" accept="image/*" onChange={choosePhoto} />
   </label>
+}
+
+function GoogleAnalyticsPageViews() {
+  const location = useLocation()
+
+  useEffect(() => {
+    trackPageView(`${location.pathname}${location.search}`)
+  }, [location.pathname, location.search])
+
+  return null
 }
 
 function DailyLogPage() {
@@ -194,5 +205,5 @@ function DailyLogPage() {
 export default function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('timelens-dark-mode') !== 'false')
   useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; localStorage.setItem('timelens-dark-mode', String(dark)) }, [dark])
-  return <><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Time<span>Lens</span></span></NavLink><div className="nav-links"><NavLink to="/">Today</NavLink><NavLink to="/dashboard">Overview</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀' : '☾'} <span>{dark ? 'Light mode' : 'Dark mode'}</span></button><ProfilePhoto /><NavLink to="/account">Account</NavLink></div></nav><Suspense fallback={<main className="dashboard-shell"><p className="quiet">Loading…</p></main>}><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/account" element={<Account />} /><Route path="/auth" element={<Auth />} /></Routes></Suspense></>
+  return <><GoogleAnalyticsPageViews /><nav className="main-nav" aria-label="Main navigation"><NavLink className="app-brand" to="/"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span><span>Time<span>Lens</span></span></NavLink><div className="nav-links"><NavLink to="/">Today</NavLink><NavLink to="/dashboard">Overview</NavLink><NavLink to="/analytics">Analytics</NavLink><NavLink to="/goals">Goals</NavLink><NavLink to="/challenge">100 days</NavLink><NavLink to="/checkins">Check-ins</NavLink><NavLink to="/experiments">Experiments</NavLink></div><div className="nav-profile"><button className="theme-toggle" type="button" onClick={() => setDark(value => !value)}>{dark ? '☀' : '☾'} <span>{dark ? 'Light mode' : 'Dark mode'}</span></button><ProfilePhoto /><NavLink to="/account">Account</NavLink></div></nav><Suspense fallback={<main className="dashboard-shell"><p className="quiet">Loading…</p></main>}><Routes><Route path="/" element={<DailyLogPage />} /><Route path="/dashboard" element={<Dashboard />} /><Route path="/analytics" element={<Analytics />} /><Route path="/goals" element={<Goals />} /><Route path="/challenge" element={<Challenge />} /><Route path="/checkins" element={<Checkins />} /><Route path="/experiments" element={<Experiments />} /><Route path="/account" element={<Account />} /><Route path="/auth" element={<Auth />} /></Routes></Suspense></>
 }
